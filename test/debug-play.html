@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html><body>
+<div id="out"></div>
+<script>
+  const out = document.getElementById("out");
+  function log(m) { out.textContent += m + "\n"; }
+  window.__done = false;
+  window.__result = null;
+
+  async function makeVideo(seed) {
+    const canvas = document.createElement("canvas");
+    canvas.width = 320; canvas.height = 180;
+    const ctx = canvas.getContext("2d");
+    const stream = canvas.captureStream(15);
+    const mime = MediaRecorder.isTypeSupported("video/webm;codecs=vp9")
+      ? "video/webm;codecs=vp9" : "video/webm";
+    const rec = new MediaRecorder(stream, { mimeType: mime });
+    const chunks = [];
+    rec.ondataavailable = (e) => e.data.size && chunks.push(e.data);
+    const done = new Promise((res) => (rec.onstop = res));
+    rec.start();
+    await new Promise((resolve) => {
+      let t = 0;
+      (function draw() {
+        ctx.fillStyle = "#123"; ctx.fillRect(0, 0, 320, 180);
+        ctx.fillStyle = "#fff"; ctx.font = "40px sans-serif"; ctx.fillText("V" + seed + " " + t, 20, 90);
+        if (++t >= 60) return resolve();
+        requestAnimationFrame(draw);
+      })();
+    });
+    rec.stop();
+    await done;
+    return URL.createObjectURL(new Blob(chunks, { type: "video/webm" }));
+  }
+
+  (async () => {
+    try {
+      const url = await makeVideo(1);
+      log("fixture ok");
+      const v = document.createElement("video");
+      v.muted = true;
+      v.setAttribute("playsinline", "");
+      v.preload = "none";
+      v.addEventListener("canplay", () => log("canplay fired"));
+      v.addEventListener("playing", () => log("playing fired"));
+      v.addEventListener("error", () => log("ERROR: " + (v.error && v.error.code)));
+      v.src = url;
+      document.body.appendChild(v);
+      await v.play();
+      log("play resolved, paused=" + v.paused + ", currentTime=" + v.currentTime);
+      await new Promise((r) => setTimeout(r, 700));
+      log("after 700ms: paused=" + v.paused + ", currentTime=" + v.currentTime + ", networkState=" + v.networkState + ", readyState=" + v.readyState);
+      window.__result = v.currentTime > 0;
+    } catch (e) {
+      log("EXCEPTION: " + e.message);
+      window.__result = false;
+    }
+    window.__done = true;
+  })();
+</script>
+</body></html>

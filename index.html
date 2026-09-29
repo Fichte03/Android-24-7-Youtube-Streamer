@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MultiStream – Mehrere Videos gleichzeitig streamen</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="app-header">
+    <div class="brand">
+      <span class="brand-icon">▶</span>
+      <div>
+        <h1>MultiStream</h1>
+        <p class="tagline">Streame mehrere Videos gleichzeitig – mit einstellbarer Obergrenze</p>
+      </div>
+    </div>
+    <div class="header-controls">
+      <label class="limit-control" title="Maximale Anzahl gleichzeitiger Streams">
+        Gleichzeitige Streams:
+        <input id="maxConcurrent" type="number" min="1" max="20" value="4" />
+      </label>
+      <button id="btnPlayAll" class="btn btn-primary">▶ Alle starten</button>
+      <button id="btnPauseAll" class="btn">⏸ Alle pausieren</button>
+      <button id="btnMuteAll" class="btn">🔇 Alle stummschalten</button>
+    </div>
+  </header>
+
+  <section class="add-section">
+    <input id="urlInput" type="url" placeholder="Video-URL einfügen (mp4/webm/m3u8) oder Datei auswählen…" />
+    <label class="btn file-btn">
+      📁 Datei
+      <input id="fileInput" type="file" accept="video/*" multiple hidden />
+    </label>
+    <button id="btnAdd" class="btn btn-accent">+ Hinzufügen</button>
+  </section>
+
+  <details id="converterPanel" class="converter-panel">
+    <summary>🛠 Video-Konverter &amp; Kompressor <span class="conv-sub">(Videos umwandeln, verkleinern &amp; direkt streamen)</span></summary>
+
+    <div id="convForm" class="conv-grid">
+      <div id="convDrop" class="conv-drop">
+        🎬 Videodatei hierher ziehen oder
+        <label class="btn btn-small">durchsuchen…
+          <input id="convFile" type="file" accept="video/*,.mkv,.avi,.ts,.mov,.m4v" hidden />
+        </label>
+        <div id="convFileInfo" class="conv-fileinfo" hidden></div>
+      </div>
+
+      <div class="conv-options">
+        <label>Zielformat
+          <select id="convProfile"></select>
+        </label>
+        <label>Qualität
+          <select id="convQuality">
+            <option value="high">Hohe Qualität (groß)</option>
+            <option value="balanced" selected>Ausgewogen (empfohlen)</option>
+            <option value="small">Klein</option>
+            <option value="tiny">Sehr klein</option>
+          </select>
+        </label>
+        <label>Auflösung
+          <select id="convResolution"></select>
+        </label>
+        <label>Framerate
+          <select id="convFps">
+            <option value="">Original behalten</option>
+            <option value="60">60 fps</option>
+            <option value="30">30 fps</option>
+            <option value="25">25 fps</option>
+            <option value="24">24 fps</option>
+            <option value="15">15 fps (spart viel)</option>
+            <option value="10">10 fps</option>
+          </select>
+        </label>
+        <label>Geschwindigkeit
+          <select id="convSpeed">
+            <option value="slow">Langsam (beste Kompression)</option>
+            <option value="balanced" selected>Ausgewogen</option>
+            <option value="fast">Schnell</option>
+          </select>
+        </label>
+        <label>Audio
+          <select id="convAudio">
+            <option value="encode" selected>Neu kodieren</option>
+            <option value="copy">Unverändert übernehmen</option>
+            <option value="none">Entfernen (stummes Video)</option>
+          </select>
+        </label>
+        <label class="conv-cap">Max. Dateigröße (MB, optional ⇒ erzwingt 2-Pass)
+          <input id="convSizeCap" type="number" min="1" step="1" placeholder="z. B. 25" />
+        </label>
+        <p id="convPredict" class="conv-predict" aria-live="polite"></p>
+      </div>
+
+      <div class="conv-run">
+        <button id="btnConvert" class="btn btn-accent">🔄 Konvertieren</button>
+        <button id="btnConvertCancel" class="btn" hidden>✕ Abbrechen</button>
+        <span id="convStage" class="conv-stage" role="status"></span>
+      </div>
+
+      <div id="convBar" class="conv-bar" hidden><div id="convBarFill"></div></div>
+      <span id="convPct" class="conv-pct"></span>
+      <p id="convError" class="conv-error" hidden></p>
+      <div id="convResult" class="conv-result" hidden></div>
+    </div>
+  </details>
+
+  <div id="queueInfo" class="queue-info" hidden>
+    ⏳ <span id="queueText"></span>
+  </div>
+
+  <main id="grid" class="video-grid" aria-live="polite"></main>
+
+  <p class="hint">
+    Tipp: Nur die erlaubte Anzahl an Videos lädt und streamt gleichzeitig – weitere werden automatisch
+    in eine Warteschlange gestellt und starten, sobald ein Platz frei wird (z.&nbsp;B. durch Entfernen
+    oder Wiedergabehilfe eines anderen Videos). Dank <code>preload=&quot;none&quot;</code> und
+    Browser-Steuerung bei Nicht-Sichtbarkeit wird Bandbreite gespart.
+  </p>
+
+  <template id="cardTemplate">
+    <article class="video-card">
+      <div class="video-wrap">
+        <video preload="none" playsinline controls></video>
+        <div class="overlay-status" hidden></div>
+      </div>
+      <div class="card-footer">
+        <span class="status-dot"></span>
+        <span class="card-title"></span>
+        <button class="btn btn-small btn-remove" title="Entfernen">✕</button>
+      </div>
+    </article>
+  </template>
+
+  <script src="converter.js"></script>
+  <script src="converter-ui.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
